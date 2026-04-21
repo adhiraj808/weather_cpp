@@ -137,6 +137,20 @@ namespace
         return left + pathSep() + right;
     }
 
+    string parentDirectory(const string &path)
+    {
+        size_t lastSlash = path.find_last_of("/\\");
+        return lastSlash == string::npos ? "." : path.substr(0, lastSlash);
+    }
+
+    void appendUnique(vector<string> &values, const string &candidate)
+    {
+        if (candidate.empty())
+            return;
+        if (find(values.begin(), values.end(), candidate) == values.end())
+            values.push_back(candidate);
+    }
+
     bool fileExists(const string &path)
     {
         FILE *file = fopen(path.c_str(), "rb");
@@ -317,24 +331,45 @@ namespace
         switch (kind)
         {
         case WeatherKind::Sunny:
-            return vector<string>{"sunny", "clear"};
+            return vector<string>{"sunny day", "sunny", "clear"};
         case WeatherKind::Rainy:
-            return vector<string>{"rainy", "rain"};
+            return vector<string>{"raining", "rainy", "rain"};
         case WeatherKind::Snow:
-            return vector<string>{"snow"};
+            return vector<string>{"snowy", "snow"};
         case WeatherKind::Thunderstorm:
-            return vector<string>{"thunderstorm", "storm"};
+            return vector<string>{"thunderstrom", "thunderstorm", "storm"};
         default:
             return vector<string>{"cloudy"};
         }
     }
 
-    string findAudioPath(WeatherKind kind)
+    vector<string> audioDirectories()
     {
         vector<string> directories;
-        directories.push_back(joinPath(joinPath(getExecutableDirectory(), "assets"), "audio"));
-        directories.push_back(joinPath(getExecutableDirectory(), "sounds"));
+        const char *envSoundDir = getenv("WEATHER_SOUND_DIR");
+        if (envSoundDir != NULL)
+            appendUnique(directories, trim(envSoundDir));
 
+#ifdef _WIN32
+        appendUnique(directories, "C:\\Users\\madhi\\OneDrive\\Desktop\\PROJECTS\\weather_cpp\\sounds");
+#endif
+
+        string executableDirectory = getExecutableDirectory();
+        string parentDirectoryPath = parentDirectory(executableDirectory);
+
+        appendUnique(directories, joinPath(executableDirectory, "sounds"));
+        appendUnique(directories, joinPath(joinPath(executableDirectory, "assets"), "audio"));
+        appendUnique(directories, joinPath(parentDirectoryPath, "sounds"));
+        appendUnique(directories, joinPath(joinPath(parentDirectoryPath, "assets"), "audio"));
+        appendUnique(directories, joinPath(".", "sounds"));
+        appendUnique(directories, joinPath(joinPath(".", "assets"), "audio"));
+
+        return directories;
+    }
+
+    string findAudioPath(WeatherKind kind)
+    {
+        vector<string> directories = audioDirectories();
         vector<string> names = soundNames(kind);
         for (size_t dirIndex = 0; dirIndex < directories.size(); ++dirIndex)
         {
