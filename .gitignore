@@ -1,0 +1,10 @@
+*.exe
+*.out
+*.o
+*.obj
+*.log
+build/
+.env
+ip.json
+weather.json
+tempCodeRunnerFile.cpp
